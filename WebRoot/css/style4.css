@@ -1,0 +1,30 @@
+@font-face {
+	font-family: Jenna Sue;
+	src: url('../fonts/JennaSue-webfont.eot');
+	src: local("Jenna Sue"), url('../fonts/JennaSue-webfont.ttf');
+}
+
+@font-face {
+	font-family: News Cycle;
+	src: url('../fonts/NewsCycle-Regular.eot');
+	src: local("News Cycle"), url('../fonts/NewsCycle-Regular.ttf');
+}
+
+@font-face {
+	font-family: xin;
+	/*src: url('../fonts/NewsCycle-Regular.eot');*/
+	src: local("xin"), url('../fonts/xin.ttf');
+}
+
+
+* {
+	margin: 0;
+	padding: 0;
+}
+
+
+body {
+	font: normal 0.80em arial, sans-serif;
+}
+
+

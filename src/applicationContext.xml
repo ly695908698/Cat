@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:aop="http://www.springframework.org/schema/aop" xmlns:context="http://www.springframework.org/schema/context"
+	default-autowire="byName"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+	       http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.1.xsd
+           http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-3.1.xsd
+           http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.1.xsd"
+	default-lazy-init="true">
+
+
+	<!-- *************************************对类包进行自动扫描******************************************** -->
+	<context:component-scan base-package="com.cat" />
+	<!-- *************************************识别注释******************************************** -->
+	<context:annotation-config />
+
+
+	<!-- *************************************配置datasource数据源bean******************************************** -->
+	<bean id="dataSource" class="com.jolbox.bonecp.BoneCPDataSource"
+		destroy-method="close">
+		<!-- 数据库配置 -->
+		<!-- 驱动 -->
+		<property name="driverClass" value="org.gjt.mm.mysql.Driver" />
+	<!-- 数据库地址 -->
+		<property name="jdbcUrl"
+			value="jdbc:mysql://10.0.16.16:4066/supermanxkq_mysql_grkx4ktk?characterEncoding=UTF-8" />
+		<!-- 数据库用户名和密码 -->
+		<property name="username" value="phWVHhEC" />
+		<property name="password" value="lMpp7uMwBLsO" />
+
+		<!-- 配置数据库连接池 -->
+		<!-- 数据库连接池中空闲连接的间隔时间，单位是分，默认值为240，如果取消则设置为0 -->
+		<property name="idleConnectionTestPeriod" value="30" />
+		<!-- 连接池中未使用连接的最大存活时间 -->
+		<property name="idleMaxAge" value="120" />
+		<!-- 每个分区最大的连接数 -->
+		<property name="maxConnectionsPerPartition" value="5" />
+		<!-- 每个分区最小的连接数 -->
+		<property name="minConnectionsPerPartition" value="2" />
+		<!-- 分区数 -->
+		<property name="partitionCount" value="3" />
+		<!-- 每次去数据库中去连接的时候，一次性取几个 -->
+		<property name="acquireIncrement" value="5" />
+		<!-- 缓存prepared statements的大小 -->
+		<property name="statementCacheSize" value="100" />
+		<!-- 每个分区释放连接助理进程的数量 -->
+		<property name="releaseHelperThreads" value="3" />
+	</bean>
+	<!-- *************************************配置sessionFactory的bean,位于Spring-orm的jar包中******************************************** -->
+	<bean id="sessionFactory"
+		class="org.springframework.orm.hibernate4.LocalSessionFactoryBean">
+		<!-- sessionFactory属性dataSource,在创建sessionFactory时候实例化dataSource -->
+		<property name="dataSource" ref="dataSource" />
+		<property name="hibernateProperties">
+			<props>
+				<!-- 配置数据库的方言 -->
+				<prop key="hibernate.dialect">
+					org.hibernate.dialect.MySQLDialect
+				</prop>
+				<!-- 在控制台显示sql语句 -->
+				<prop key="hibernate.show_sql">
+					true
+				</prop>
+				<!-- 格式化sql语句 -->
+				<prop key="hibernate.format_sql">true</prop>
+				<!-- 自动创建/更新表 -->
+				<prop key="hibernate.hbm2ddl.auto">update</prop>
+				<!-- 配置并将session绑定到某一运行环境，当前没有session就自动创建一个 -->
+				<prop key="hibernate.current_session_context_class">
+					org.springframework.orm.hibernate4.SpringSessionContext
+				</prop>
+			</props>
+		</property>
+		<!--自动对实体类进行扫描 -->
+		<property name="packagesToScan">
+			<!--实体类位置 -->
+			<value>com.cat.bean</value>
+		</property>
+	</bean>
+	<!-- *************************************配置事务管理器******************************************** -->
+	<bean id="transactionManager"
+		class="org.springframework.orm.hibernate4.HibernateTransactionManager"
+		abstract="false" lazy-init="default" autowire="default">
+		<property name="sessionFactory" ref="sessionFactory" />
+	</bean>
+	<!-- 配置参与事物的类 -->
+	<aop:config expose-proxy="true">
+		<aop:advisor advice-ref="txAdvice"
+			pointcut="execution(* com.cat.service.impl.*.*(..))" />
+	</aop:config>
+	<!-- 配置事物传播特性 -->
+	<tx:advice id="txAdvice" transaction-manager="transactionManager">
+		<tx:attributes>
+			<tx:method name="*" propagation="REQUIRED" rollback-for="java.lang.Exception" />
+			<tx:method name="get*" read-only="true" />
+		</tx:attributes>
+	</tx:advice>
+	<!-- 用户管理bean -->
+	<bean id="userAction" class="com.cat.action.UserAction" scope="prototype"></bean>
+	<bean id="workAction" class="com.cat.action.WorkAction" scope="prototype"></bean>
+	<bean id="basicConfigurationAction" class="com.cat.action.BasicConfigurationAction"
+		scope="prototype"></bean>
+	<bean id="findAboutJspAction" class="com.cat.action.FindAboutJspAction"
+		scope="prototype"></bean>
+	<bean id="findContactJspAction" class="com.cat.action.FindContactJspAction"
+		scope="prototype"></bean>
+	<!-- 相册处理 -->
+	<bean id="albumAction" class="com.cat.action.AlbumAction" scope="prototype"></bean>
+	<!-- 验证码Action对应的bean -->
+	<bean id="randomAction" class="com.cat.action.RandomAction" scope="prototype"></bean>
+	<bean id="leaveMessageAction" class="com.cat.action.LeaveMessageAction"
+		scope="prototype"></bean>
+	<!-- 小窝管理 -->
+	<bean id="houseAction" class="com.cat.action.HouseAction" scope="prototype"></bean>
+	<!-- 用户详细信息管理 -->
+	<bean id="userDetailsAction" class="com.cat.action.UserDetailsAction"
+		scope="prototype"></bean>
+	<!-- 用户回复管理 -->
+	<bean id="leaveMessageReplyAction" class="com.cat.action.LeaveMessageReplyAction"
+		scope="prototype"></bean>
+	<!-- 动态管理 -->
+	<bean id="dynamicAction" class="com.cat.action.DynamicAction"
+		scope="prototype"></bean>
+</beans>

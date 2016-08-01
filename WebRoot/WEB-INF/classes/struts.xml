@@ -1,0 +1,478 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE struts PUBLIC
+	"-//Apache Software Foundation//DTD Struts Configuration 2.3//EN"
+	"http://struts.apache.org/dtds/struts-2.3.dtd">
+
+<struts>
+	<!--配置struts2的常量 -->
+	<!-- 将struts2的Action交给spring实例化 -->
+	<constant name="struts.objectFactory" value="spring" />
+	<!--指定web应用的默认编码 -->
+	<constant name="struts.i18n.encoding" value="UTF-8" />
+	<!-- struts2支持动态方法调用,为了网站安全，这里设置为false -->
+	<constant name="struts.enable.DynamicMethodInvocation" value="false" />
+	<!-- struts2的开发模式，用于热部署 -->
+	<constant name="struts.devMode" value="true" />
+	<!-- 在package外面(<constant name="struts.multipart.maxSize" value="1024102400"/>)限制总的上传大小 
+		那么，当你上传的单个图片超过限定的大小，没事反应，但是后台会报错 -->
+	<constant name="struts.multipart.maxSize" value="1024102400" />
+	<package name="catmanager" namespace="/" extends="struts-default">
+		<interceptors>
+			<!-- 声明自定义拦截器判断网站是否关闭 -->
+			<interceptor name="basicConfigurationInterceptor"
+				class="com.cat.interceptor.BasicConfigurationInterceptor"></interceptor>
+			<!-- 声明自定义拦截器判断用户是否登录 -->
+			<interceptor name="userLoginInterceptor"
+				class="com.cat.interceptor.UserLoginInterceptor"></interceptor>
+		</interceptors>
+
+
+		<!-- 全局处理结果 -->
+		<global-results>
+			<!-- 网站被关闭，跳转到网站关闭页面websitecloseinfo.jsp -->
+			<result name="webisclosed">/websitecloseinfo.jsp</result>
+			<!-- 用户没有登录时跳转 -->
+			<result name="usernotlogin">/back/session.jsp</result>
+			<!-- 所有出现错误的页面都跳转到登录页面 -->
+			<result name="error">/back/session.jsp</result>
+		</global-results>
+
+		<!-- 全局异常处理结果 -->
+		<global-exception-mappings>
+			<exception-mapping result="error" exception="java.lang.Exception"></exception-mapping>
+		</global-exception-mappings>
+
+		<!--后台用户登录######################################################################### -->
+		<action name="loginAction" class="userAction" method="login">
+			<result name="success">/back/index.jsp</result>
+			<result name="input">/back/login.jsp</result>
+		</action>
+		<!-- 添加作品######################################################################### -->
+		<action name="addWorksAction" method="addWorks" class="workAction">
+			<!-- 引用自定义拦截器进行拦截，防止未登录访问 -->
+			<interceptor-ref name="userLoginInterceptor"></interceptor-ref>
+			<!-- 引用默认拦截器进行辅助拦截 -->
+			<interceptor-ref name="defaultStack"></interceptor-ref>
+			<!-- 通过配置拦截器 来限制文件的大小 -->
+			<interceptor-ref name="fileUpload">
+				<param name="maximumSize">1024102400</param>
+			</interceptor-ref>
+			<!-- 通过配置拦截器 来限制文件的类型 -->
+			<interceptor-ref name="fileUpload">
+				<param name="allowedTypes">image/jpeg,image/pjpeg,image/png,image/bmp</param>
+			</interceptor-ref>
+			<!-- 调用默认的拦截器 -->
+			<interceptor-ref name="defaultStack" />
+			<!-- 定义一个result -->
+			<result name="input">/back/error.jsp</result>
+			<result name="error">/back/error.jsp</result>
+			<result name="success" type="chain">findWorksByIdAction</result>
+			<!-- 添加一个input的result配置(限制文件的上传的大小) -->
+		</action>
+		<!-- 根据作品编号查找作品用来更新##################################################################### -->
+		<action name="findWorksByIdAction" class="workAction" method="findWorksById">
+			<!-- 引用自定义拦截器进行拦截，防止未登录访问 -->
+			<interceptor-ref name="userLoginInterceptor"></interceptor-ref>
+			<!-- 引用默认拦截器进行辅助拦截 -->
+			<interceptor-ref name="defaultStack"></interceptor-ref>
+			<result name="success">/back/uploadworks.jsp</result>
+		</action>
+		<!-- 根据作品编号查找作品用来更新##################################################################### -->
+		<action name="findWorksByIdForUpdateAction" class="workAction"
+			method="findWorksByIdForUpdate">
+			<!-- 引用自定义拦截器进行拦截，防止未登录访问 -->
+			<interceptor-ref name="userLoginInterceptor"></interceptor-ref>
+			<!-- 引用默认拦截器进行辅助拦截 -->
+			<interceptor-ref name="defaultStack"></interceptor-ref>
+			<result name="success">/back/updateworks.jsp</result>
+		</action>
+		<!-- 查找所有的作品到前台##################################################################### -->
+		<action name="findWorksAction" class="workAction" method="findWorks">
+			<!-- 引用自定义拦截器进行拦截，防止未登录访问 -->
+			<interceptor-ref name="basicConfigurationInterceptor"></interceptor-ref>
+			<!-- 引用默认拦截器进行辅助拦截 -->
+			<interceptor-ref name="defaultStack"></interceptor-ref>
+			<result name="success">/pictures2.jsp</result>
+		</action>
+		<!-- 查找基本配置信息######################################################################### -->
+		<action name="findBasicConfigurationAction" class="basicConfigurationAction"
+			method="findBasicConfiguration">
+			<!-- 引用自定义拦截器进行拦截，防止未登录访问 -->
+			<interceptor-ref name="userLoginInterceptor"></interceptor-ref>
+			<!-- 引用默认拦截器进行辅助拦截 -->
+			<interceptor-ref name="defaultStack"></interceptor-ref>
+			<result name="success">/back/findBasicConfiguration.jsp</result>
+		</action>
+
+		<!-- 关闭网站########################################################## -->
+		<action name="closeWebSiteAction" class="basicConfigurationAction"
+			method="closeWebSite">
+			<!-- 引用自定义拦截器进行拦截，防止未登录访问 -->
+			<interceptor-ref name="userLoginInterceptor"></interceptor-ref>
+			<!-- 引用默认拦截器进行辅助拦截 -->
+			<interceptor-ref name="defaultStack"></interceptor-ref>
+			<result name="success" type="chain">findBasicConfigurationAction
+			</result>
+		</action>
+		<action name="findAboutJspAction" class="findAboutJspAction"
+			method="findAboutJsp">
+			<!-- 引用自定义拦截器进行拦截，防止网站被关闭后访问 -->
+			<interceptor-ref name="basicConfigurationInterceptor"></interceptor-ref>
+			<!-- 引用默认拦截器进行辅助拦截 -->
+			<interceptor-ref name="defaultStack"></interceptor-ref>
+			<result name="success">/about.jsp</result>
+		</action>
+		<!-- 查找用户联系信息######################################################################### -->
+		<action name="findContactJspAction" class="findContactJspAction"
+			method="findContactJsp">
+			<!-- 引用自定义拦截器进行拦截，防止未登录访问 -->
+			<interceptor-ref name="basicConfigurationInterceptor"></interceptor-ref>
+			<!-- 引用默认拦截器进行辅助拦截 -->
+			<interceptor-ref name="defaultStack"></interceptor-ref>
+			<result name="success">/contact.jsp</result>
+		</action>
+		<action name="logOutAction" class="userAction" method="logOut">
+			<result name="success">/back/login.jsp</result>
+		</action>
+		<!-- 查看上传相册列表 ########################################################################## -->
+		<action name="findAlbumsAction" class="albumAction" method="findAlbums">
+			<!-- 引用自定义拦截器进行拦截，防止未登录访问 -->
+			<interceptor-ref name="userLoginInterceptor"></interceptor-ref>
+			<!-- 引用默认拦截器进行辅助拦截 -->
+			<interceptor-ref name="defaultStack"></interceptor-ref>
+			<result name="success">/back/showalbums.jsp</result>
+		</action>
+		<!-- 根据相册编号查找相册######################################################################### -->
+		<action name="findAlbumByIdAction" class="albumAction" method="findAlbumById">
+			<!-- 引用自定义拦截器进行拦截，防止未登录访问 -->
+			<interceptor-ref name="userLoginInterceptor"></interceptor-ref>
+			<!-- 引用默认拦截器进行辅助拦截 -->
+			<interceptor-ref name="defaultStack"></interceptor-ref>
+			<result name="success">/back/updatealbum.jsp</result>
+		</action>
+
+		<!-- 更新相册######################################################################### -->
+		<action name="updateAlbumAction" class="albumAction" method="updateAlbum">
+			<!-- 引用自定义拦截器进行拦截，防止未登录访问 -->
+			<interceptor-ref name="userLoginInterceptor"></interceptor-ref>
+			<!-- 引用默认拦截器进行辅助拦截 -->
+			<interceptor-ref name="defaultStack"></interceptor-ref>
+			<!-- 通过配置拦截器 来限制文件的大小 -->
+			<interceptor-ref name="fileUpload">
+				<param name="maximumSize">1024102400</param>
+			</interceptor-ref>
+			<!-- 通过配置拦截器 来限制文件的类型 -->
+			<interceptor-ref name="fileUpload">
+				<param name="allowedTypes">image/jpeg,image/pjpeg,image/png</param>
+			</interceptor-ref>
+			<!-- 调用默认的拦截器 -->
+			<interceptor-ref name="defaultStack" />
+			<result name="input">/back/error.jsp</result>
+			<result name="error">/back/error.jsp</result>
+			<result name="success" type="chain">findAlbumsAction</result>
+		</action>
+
+		<!-- 添加相册######################################################################### -->
+		<action name="addAlbumAction" class="albumAction" method="addAlbum">
+			<!-- 引用自定义拦截器进行拦截，防止未登录访问 -->
+			<interceptor-ref name="userLoginInterceptor"></interceptor-ref>
+			<!-- 引用默认拦截器进行辅助拦截 -->
+			<interceptor-ref name="defaultStack"></interceptor-ref>
+			<!-- 通过配置拦截器 来限制文件的大小 -->
+			<interceptor-ref name="fileUpload">
+				<param name="maximumSize">1024102400</param>
+			</interceptor-ref>
+			<!-- 通过配置拦截器 来限制文件的类型 -->
+			<interceptor-ref name="fileUpload">
+				<param name="allowedTypes">image/jpeg,image/pjpeg,image/png</param>
+			</interceptor-ref>
+			<!-- 调用默认的拦截器 -->
+			<interceptor-ref name="defaultStack" />
+			<!-- 定义一个result -->
+			<result name="input">/back/error.jsp</result>
+			<result name="error">/back/error.jsp</result>
+			<result name="success" type="chain">findAlbumsAction</result>
+		</action>
+		<!-- 删除相册######################################################################### -->
+		<action name="deleteAlbumAction" class="albumAction" method="deleteAlbum">
+			<!-- 引用自定义拦截器进行拦截，防止未登录访问 -->
+			<interceptor-ref name="userLoginInterceptor"></interceptor-ref>
+			<!-- 引用默认拦截器进行辅助拦截 -->
+			<interceptor-ref name="defaultStack"></interceptor-ref>
+			<result name="success" type="chain">findAlbumsAction</result>
+		</action>
+		<!--根据相册编号查找作品######################################################################### -->
+		<action name="findWorksByAlbumIdAction" class="albumAction"
+			method="findWorksByAlbumId">
+			<!-- 引用自定义拦截器进行拦截，防止未登录访问 -->
+			<interceptor-ref name="userLoginInterceptor"></interceptor-ref>
+			<!-- 引用默认拦截器进行辅助拦截 -->
+			<interceptor-ref name="defaultStack"></interceptor-ref>
+			<result name="success">/back/showworks.jsp</result>
+		</action>
+		<!-- 查找作品用来更新####################################################### -->
+		<action name="findAlbumsForUploadAction" class="albumAction"
+			method="findAlbumsForUpload">
+			<!-- 引用自定义拦截器进行拦截，防止未登录访问 -->
+			<interceptor-ref name="userLoginInterceptor"></interceptor-ref>
+			<!-- 引用默认拦截器进行辅助拦截 -->
+			<interceptor-ref name="defaultStack"></interceptor-ref>
+			<result name="success">/back/uploadworks.jsp</result>
+		</action>
+
+		<!-- 删除作品信息#################################################################### -->
+		<action name="deleteWorksAction" class="workAction" method="deleteWorks">
+			<result name="success" type="chain">findWorksByAlbumIdAction</result>
+		</action>
+		<!-- 更新作品信息#################################################################### -->
+		<action name="updateWorksAction" class="workAction" method="updateWorks">
+			<result name="success" type="chain">findWorksByAlbumIdAction</result>
+		</action>
+		<!-- 查找作品信息到前台#################################################################### -->
+		<action name="findAlbumsToFrontAction" class="albumAction"
+			method="findAlbumsToFront">
+			<!-- 引用自定义拦截器进行拦截 -->
+			<interceptor-ref name="basicConfigurationInterceptor"></interceptor-ref>
+			<!-- 引用默认拦截器进行辅助拦截 -->
+			<interceptor-ref name="defaultStack"></interceptor-ref>
+			<result name="success">/pictures.jsp</result>
+		</action>
+		<!-- 根据相册编号查找作品信息到前台#################################################################### -->
+		<action name="findWorksByAlbumIdToFrontAction" class="albumAction"
+			method="findWorksByAlbumIdToFront">
+			<!-- 引用自定义拦截器进行拦截 -->
+			<interceptor-ref name="basicConfigurationInterceptor"></interceptor-ref>
+			<!-- 引用默认拦截器进行辅助拦截 -->
+			<interceptor-ref name="defaultStack"></interceptor-ref>
+			<result name="success">
+				/portfolio_one.jsp
+			</result>
+		</action>
+		<!--前台用户注册 -->
+		<action name="saveUserAction" class="userAction" method="saveUser">
+			<result name="success">/saveusersuccess.jsp</result>
+		</action>
+		<!--前台用户登录 -->
+		<action name="frontLoginAction" class="userAction" method="frontLogin">
+			<result name="success">/mainfunctionpage.jsp</result>
+			<result name="input">/login2.jsp</result>
+		</action>
+		<!-- 前台用户退出登录 -->
+		<action name="frontUserLogOutAction" class="userAction" method="frontUserLogOut">
+			<result name="success">/login2.jsp</result>
+		</action>
+		<!-- 生成验证码 -->
+		<action name="randAction" class="randomAction">
+			<result type="stream">
+				<param name="contentType">image/jpeg</param>
+				<param name="inputName">inputStream</param>
+			</result>
+		</action>
+		<!-- 添加留言信息 -->
+		<action name="addLeaveMessageAction" class="leaveMessageAction"
+			method="addLeaveMessage">
+			<!-- 引用自定义拦截器进行拦截，防止未登录访问 -->
+			<interceptor-ref name="basicConfigurationInterceptor"></interceptor-ref>
+			<!-- 引用默认拦截器进行辅助拦截 -->
+			<interceptor-ref name="defaultStack"></interceptor-ref>
+			<result name="input" type="chain">findLeaveMessageToFrontAction
+			</result>
+			<result name="success" type="redirectAction">findLeaveMessageToFrontAction
+			</result>
+		</action>
+		<!-- 查询留言信息 -->
+		<action name="findLeaveMessageToFrontAction" class="leaveMessageAction"
+			method="findLeaveMessageToFront">
+			<!-- 引用自定义拦截器进行拦截，关闭网站 -->
+			<interceptor-ref name="basicConfigurationInterceptor"></interceptor-ref>
+			<!-- 引用默认拦截器进行辅助拦截 -->
+			<interceptor-ref name="defaultStack"></interceptor-ref>
+			<result name="success">/leavemessage3.jsp</result>
+		</action>
+		<!-- 查找所有的留言到后台############################################################## -->
+		<action name="findLeaveMessageAction" class="leaveMessageAction"
+			method="findLeaveMessage">
+			<!-- 引用自定义拦截器进行拦截，防止未登录访问 -->
+			<interceptor-ref name="userLoginInterceptor"></interceptor-ref>
+			<!-- 引用默认拦截器进行辅助拦截 -->
+			<interceptor-ref name="defaultStack"></interceptor-ref>
+			<result name="success">/back/showleavemessage.jsp</result>
+		</action>
+		<!-- 删除留言############################################################## -->
+		<action name="deleteLeaveMessageAction" class="leaveMessageAction"
+			method="deleteLeaveMessage">
+			<!-- 引用自定义拦截器进行拦截，防止未登录访问 -->
+			<interceptor-ref name="userLoginInterceptor"></interceptor-ref>
+			<!-- 引用默认拦截器进行辅助拦截 -->
+			<interceptor-ref name="defaultStack"></interceptor-ref>
+			<result name="success" type="chain">findLeaveMessageAction</result>
+		</action>
+
+		<!-- 删除留言（批量删除）############################################################## -->
+		<action name="deleteAllLeaveMessageAction" class="leaveMessageAction"
+			method="deleteAllLeaveMessage">
+			<!-- 引用自定义拦截器进行拦截，防止未登录访问 -->
+			<interceptor-ref name="userLoginInterceptor"></interceptor-ref>
+			<!-- 引用默认拦截器进行辅助拦截 -->
+			<interceptor-ref name="defaultStack"></interceptor-ref>
+			<result name="success" type="chain">findLeaveMessageAction</result>
+		</action>
+		<!-- 根据留言编号查找回复信息到后台############################################################ -->
+		<action name="findLeaveMessageReplyByLeaveMessageIdAction"
+			class="leaveMessageAction" method="findLeaveMessageReplyByLeaveMessageId">
+			<!-- 引用自定义拦截器进行拦截，防止未登录访问 -->
+			<interceptor-ref name="userLoginInterceptor"></interceptor-ref>
+			<!-- 引用默认拦截器进行辅助拦截 -->
+			<interceptor-ref name="defaultStack"></interceptor-ref>
+			<result name="success">/back/addleavemessagereply.jsp</result>
+		</action>
+
+		<!-- 回复留言################################################################################## -->
+		<action name="addLeaveMessageReplyAction" class="leaveMessageReplyAction"
+			method="addLeaveMessageReply">
+			<!-- 引用自定义拦截器进行拦截，防止未登录访问 -->
+			<interceptor-ref name="userLoginInterceptor"></interceptor-ref>
+			<!-- 引用默认拦截器进行辅助拦截 -->
+			<interceptor-ref name="defaultStack"></interceptor-ref>
+			<result name="success">/back/addleavemessagereply.jsp</result>
+		</action>
+
+		<!-- 查找所有小窝信息到后台################################################################################## -->
+		<action name="findHousesAction" class="houseAction" method="findHouses">
+			<!-- 引用自定义拦截器进行拦截，防止未登录访问 -->
+			<interceptor-ref name="userLoginInterceptor"></interceptor-ref>
+			<!-- 引用默认拦截器进行辅助拦截 -->
+			<interceptor-ref name="defaultStack"></interceptor-ref>
+			<result name="success">/back/showhouses.jsp</result>
+		</action>
+
+		<!-- 添加小窝信息############################################################################## -->
+		<action name="addHouseAction" class="houseAction" method="addHouse">
+			<!-- 引用自定义拦截器进行拦截，防止未登录访问 -->
+			<interceptor-ref name="userLoginInterceptor"></interceptor-ref>
+			<!-- 引用默认拦截器进行辅助拦截 -->
+			<interceptor-ref name="defaultStack"></interceptor-ref>
+			<!-- 通过配置拦截器 来限制文件的大小 -->
+			<interceptor-ref name="fileUpload">
+				<param name="maximumSize">1024102400</param>
+			</interceptor-ref>
+			<!-- 通过配置拦截器 来限制文件的类型 -->
+			<interceptor-ref name="fileUpload">
+				<param name="allowedTypes">image/jpeg,image/pjpeg,image/png</param>
+			</interceptor-ref>
+			<!-- 调用默认的拦截器 -->
+			<interceptor-ref name="defaultStack" />
+			<!-- 定义一个result -->
+			<result name="input">/back/error.jsp</result>
+			<result name="error">/back/error.jsp</result>
+			<result name="success" type="chain">findHousesAction</result>
+		</action>
+
+		<!-- 删除小窝详细信息 ########################################################################### -->
+		<action name="deleteHouseAction" class="houseAction" method="deleteHouse">
+			<!-- 引用自定义拦截器进行拦截，防止未登录访问 -->
+			<interceptor-ref name="userLoginInterceptor"></interceptor-ref>
+			<!-- 引用默认拦截器进行辅助拦截 -->
+			<interceptor-ref name="defaultStack"></interceptor-ref>
+			<result name="success" type="chain">findHousesAction</result>
+		</action>
+
+		<!-- 查找所有小窝信息到前台################################################################################## -->
+		<action name="findHousesToFrontAction" class="houseAction"
+			method="findHousesToFront">
+			<!-- 引用自定义拦截器进行拦截，防止关闭网站后访问 -->
+			<interceptor-ref name="basicConfigurationInterceptor"></interceptor-ref>
+			<!-- 引用默认拦截器进行辅助拦截 -->
+			<interceptor-ref name="defaultStack"></interceptor-ref>
+			<result name="success">/center.jsp</result>
+		</action>
+
+		<!-- 保存用户的详细信息 ###################################################################### -->
+		<action name="saveUserDetailsAction" class="userDetailsAction"
+			method="saveUserDetails">
+			<!-- 引用自定义拦截器进行拦截，防止未登录访问 -->
+			<interceptor-ref name="userLoginInterceptor"></interceptor-ref>
+			<!-- 引用默认拦截器进行辅助拦截 -->
+			<interceptor-ref name="defaultStack"></interceptor-ref>
+			<!-- 通过配置拦截器 来限制文件的大小 -->
+			<interceptor-ref name="fileUpload">
+				<param name="maximumSize">1024102400</param>
+			</interceptor-ref>
+			<!-- 通过配置拦截器 来限制文件的类型 -->
+			<interceptor-ref name="fileUpload">
+				<param name="allowedTypes">image/jpeg,image/pjpeg,image/png</param>
+			</interceptor-ref>
+			<!-- 调用默认的拦截器 -->
+			<interceptor-ref name="defaultStack" />
+			<!-- 定义一个result -->
+			<result name="input">/back/error.jsp</result>
+			<result name="error">/back/error.jsp</result>
+			<result name="success">/back/adduserdetails.jsp</result>
+		</action>
+		<!-- 通过已经登录的用户查找用户的详细信息########################################################### -->
+		<action name="findUserDetailsByUserIdAction" class="userDetailsAction"
+			method="findUserDetailsByUserId">
+			<!-- 引用自定义拦截器进行拦截，防止未登录访问 -->
+			<interceptor-ref name="userLoginInterceptor"></interceptor-ref>
+			<!-- 引用默认拦截器进行辅助拦截 -->
+			<interceptor-ref name="defaultStack"></interceptor-ref>
+			<result name="success">/back/adduserdetails.jsp</result>
+		</action>
+
+
+		<!-- 查找动态信息到后台####################################################################### -->
+		<action name="findDynamicsAction" class="dynamicAction" method="findDynamics">
+			<!-- 引用自定义拦截器进行拦截，防止未登录访问 -->
+			<interceptor-ref name="userLoginInterceptor"></interceptor-ref>
+			<!-- 引用默认拦截器进行辅助拦截 -->
+			<interceptor-ref name="defaultStack"></interceptor-ref>
+			<result name="success">/back/showdynamics.jsp</result>
+		</action>
+
+
+
+		<!-- 添加动态信息############################################################################ -->
+		<action name="addDynamicAction" class="dynamicAction" method="addDynamic">
+			<!-- 引用自定义拦截器进行拦截，防止未登录访问 -->
+			<interceptor-ref name="userLoginInterceptor"></interceptor-ref>
+			<!-- 引用默认拦截器进行辅助拦截 -->
+			<interceptor-ref name="defaultStack"></interceptor-ref>
+			<!-- 通过配置拦截器 来限制文件的大小 -->
+			<interceptor-ref name="fileUpload">
+				<param name="maximumSize">1024102400</param>
+			</interceptor-ref>
+			<!-- 通过配置拦截器 来限制文件的类型 -->
+			<interceptor-ref name="fileUpload">
+				<param name="allowedTypes">image/jpeg,image/pjpeg,image/png</param>
+			</interceptor-ref>
+			<!-- 调用默认的拦截器 -->
+			<interceptor-ref name="defaultStack" />
+			<!-- 定义一个result -->
+			<result name="input">/back/error.jsp</result>
+			<result name="error">/back/error.jsp</result>
+			<result name="success" type="chain">findDynamicsAction</result>
+		</action>
+
+		<!-- 删除动态信息 ############################################################################# -->
+		<action name="deleteDynamicAction" class="dynamicAction"
+			method="deleteDynamic">
+			<!-- 引用自定义拦截器进行拦截，防止未登录访问 -->
+			<interceptor-ref name="userLoginInterceptor"></interceptor-ref>
+			<!-- 引用默认拦截器进行辅助拦截 -->
+			<interceptor-ref name="defaultStack"></interceptor-ref>
+			<result name="success" type="chain">findDynamicsAction</result>
+		</action>
+
+		<!-- 查找动态信息到前台 ####################################################################### -->
+		<action name="findDynamicsToFrontAction" class="dynamicAction"
+			method="findDynamicsToFront">
+			<!-- 引用自定义拦截器进行拦截，防止关闭网站后访问 -->
+			<interceptor-ref name="basicConfigurationInterceptor"></interceptor-ref>
+			<!-- 引用默认拦截器进行辅助拦截 -->
+			<interceptor-ref name="defaultStack"></interceptor-ref>
+			<result name="success">/blog.jsp</result>
+		</action>
+	</package>
+</struts>
+
+
